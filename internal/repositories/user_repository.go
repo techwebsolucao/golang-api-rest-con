@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/user/golang-api-rest/internal/models"
 )
 
@@ -32,5 +33,5 @@ func (r *MemoryRepository) GetByID(id int) (*models.User, error) {
 			return &u, nil
 		}
 	}
-	return nil, nil
+	return nil, errors.New("user not found")
 }
