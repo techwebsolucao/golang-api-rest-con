@@ -20,7 +20,7 @@ func main() {
 
 	r.Use(middleware.LoggingMiddleware)
 
-	r.Get("/users", userController.GetAll)
+	r.Get("/api/v1/users", userController.GetAll)
 
 	log.Println("🚀 Servidor rodando na porta :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
