@@ -1,3 +1,5 @@
 go.sum
 .env
 .openclaude/audit.jsonl
+tmp/
+build-errors.log

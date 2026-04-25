@@ -21,15 +21,6 @@ definitions:
       password:
         type: string
     type: object
-  models.TokenResponse:
-    properties:
-      access_token:
-        type: string
-      expires_at:
-        type: string
-      refresh_token:
-        type: string
-    type: object
   models.UpdateUserRequest:
     properties:
       email:
@@ -37,27 +28,20 @@ definitions:
       name:
         type: string
     type: object
-  models.User:
-    properties:
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      role:
-        type: string
-      updated_at:
-        type: string
-      verified:
-        type: boolean
-    type: object
   models.VerifyEmailRequest:
     properties:
       token:
         type: string
+    type: object
+  response.APIResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -72,7 +56,7 @@ info:
   title: Go REST API
   version: "1.0"
 paths:
-  /api/v1/auth/login:
+  /auth/login:
     post:
       consumes:
       - application/json
@@ -88,17 +72,17 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Login realizado com sucesso
           schema:
-            $ref: '#/definitions/models.TokenResponse'
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Credenciais inválidas
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       summary: Login
       tags:
       - auth
-  /api/v1/auth/refresh:
+  /auth/refresh:
     post:
       consumes:
       - application/json
@@ -115,17 +99,17 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Tokens renovados com sucesso
           schema:
-            $ref: '#/definitions/models.TokenResponse'
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Refresh token inválido ou expirado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       summary: Renovar tokens
       tags:
       - auth
-  /api/v1/auth/register:
+  /auth/register:
     post:
       consumes:
       - application/json
@@ -142,22 +126,21 @@ paths:
       - application/json
       responses:
         "201":
-          description: user + token
+          description: Usuário criado com sucesso
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: Erro de validação
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "409":
           description: Email já cadastrado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       summary: Registrar novo usuário
       tags:
       - auth
-  /api/v1/auth/verify-email:
+  /auth/verify-email:
     get:
       consumes:
       - application/json
@@ -177,15 +160,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: mensagem de sucesso
+          description: Email verificado com sucesso
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: Token inválido ou expirado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       summary: Verificar email
       tags:
       - auth
@@ -208,40 +189,36 @@ paths:
       - application/json
       responses:
         "200":
-          description: mensagem de sucesso
+          description: Email verificado com sucesso
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: Token inválido ou expirado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       summary: Verificar email
       tags:
       - auth
-  /api/v1/users:
+  /users:
     get:
       description: Retorna a lista de todos os usuários cadastrados (requer autenticação).
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Lista de usuários
           schema:
-            items:
-              $ref: '#/definitions/models.User'
-            type: array
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Não autorizado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Listar usuários
       tags:
       - users
-  /api/v1/users/{id}:
+  /users/{id}:
     delete:
       description: Remove um usuário do sistema (requer role admin).
       parameters:
@@ -251,24 +228,26 @@ paths:
         required: true
         type: integer
       responses:
-        "204":
-          description: Sem conteúdo
+        "200":
+          description: Usuário deletado com sucesso
+          schema:
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: ID inválido
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Não autorizado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "403":
           description: Acesso negado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Usuário não encontrado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Deletar usuário
@@ -286,21 +265,21 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Dados do usuário
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: ID inválido
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Não autorizado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Usuário não encontrado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Buscar usuário por ID
@@ -326,21 +305,21 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Usuário atualizado com sucesso
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: ID ou corpo inválido
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Não autorizado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Usuário não encontrado
           schema:
-            type: string
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Atualizar usuário

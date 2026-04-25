@@ -11,9 +11,9 @@ import (
 )
 
 type AuthService struct {
-	repo   repositories.UserRepository
-	cfg    *config.Config
-	email  *EmailService
+	repo  repositories.UserRepository
+	cfg   *config.Config
+	email *EmailService
 }
 
 func NewAuthService(repo repositories.UserRepository, cfg *config.Config, email *EmailService) *AuthService {
@@ -91,6 +91,10 @@ func (s *AuthService) Login(req *models.LoginRequest) (*models.TokenResponse, er
 
 	if !utils.CheckPassword(req.Password, user.PasswordHash) {
 		return nil, errors.New("credenciais inválidas")
+	}
+
+	if !user.Verified {
+		return nil, errors.New("email não verificado. Por favor, verifique seu email antes de fazer login.")
 	}
 
 	accessToken, expiresAt, err := utils.GenerateAccessToken(user.ID, user.Role, s.cfg)

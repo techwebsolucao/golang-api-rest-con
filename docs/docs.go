@@ -23,7 +23,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/auth/login": {
+        "/auth/login": {
             "post": {
                 "description": "Autentica com email e senha e retorna access + refresh tokens.",
                 "consumes": [
@@ -49,21 +49,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Login realizado com sucesso",
                         "schema": {
-                            "$ref": "#/definitions/models.TokenResponse"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Credenciais inválidas",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/auth/refresh": {
+        "/auth/refresh": {
             "post": {
                 "description": "Gera novos access + refresh tokens a partir de um refresh token válido.",
                 "consumes": [
@@ -89,21 +89,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Tokens renovados com sucesso",
                         "schema": {
-                            "$ref": "#/definitions/models.TokenResponse"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Refresh token inválido ou expirado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/auth/register": {
+        "/auth/register": {
             "post": {
                 "description": "Cria um novo usuário e retorna os dados + tokens JWT. Um email de verificação é enviado.",
                 "consumes": [
@@ -129,28 +129,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "user + token",
+                        "description": "Usuário criado com sucesso",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Erro de validação",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "409": {
                         "description": "Email já cadastrado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/auth/verify-email": {
+        "/auth/verify-email": {
             "get": {
                 "description": "Marca o email do usuário como verificado usando o token enviado por email.",
                 "consumes": [
@@ -181,18 +180,15 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "mensagem de sucesso",
+                        "description": "Email verificado com sucesso",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Token inválido ou expirado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
@@ -227,24 +223,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "mensagem de sucesso",
+                        "description": "Email verificado com sucesso",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Token inválido ou expirado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/users": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -261,24 +254,21 @@ const docTemplate = `{
                 "summary": "Listar usuários",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Lista de usuários",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.User"
-                            }
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Não autorizado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/users/{id}": {
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -304,27 +294,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Dados do usuário",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "ID inválido",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Não autorizado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Usuário não encontrado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
@@ -366,27 +356,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Usuário atualizado com sucesso",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "ID ou corpo inválido",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Não autorizado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Usuário não encontrado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
@@ -412,31 +402,34 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Sem conteúdo"
+                    "200": {
+                        "description": "Usuário deletado com sucesso",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
                     },
                     "400": {
                         "description": "ID inválido",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Não autorizado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "403": {
                         "description": "Acesso negado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Usuário não encontrado",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     }
                 }
@@ -477,20 +470,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.TokenResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
         "models.UpdateUserRequest": {
             "type": "object",
             "properties": {
@@ -502,37 +481,26 @@ const docTemplate = `{
                 }
             }
         },
-        "models.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "verified": {
-                    "type": "boolean"
-                }
-            }
-        },
         "models.VerifyEmailRequest": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "response.APIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }

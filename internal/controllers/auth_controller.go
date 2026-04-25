@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/user/golang-api-rest/internal/models"
+	"github.com/user/golang-api-rest/internal/response"
 	"github.com/user/golang-api-rest/internal/services"
 )
 
@@ -23,14 +24,14 @@ func NewAuthController(authService *services.AuthService) *AuthController {
 // @Accept json
 // @Produce json
 // @Param request body models.RegisterRequest true "Dados do registro"
-// @Success 201 {object} map[string]interface{} "user + token"
-// @Failure 400 {string} string "Erro de validação"
-// @Failure 409 {string} string "Email já cadastrado"
-// @Router /api/v1/auth/register [post]
+// @Success 201 {object} response.APIResponse "Usuário criado com sucesso"
+// @Failure 400 {object} response.APIResponse "Erro de validação"
+// @Failure 409 {object} response.APIResponse "Email já cadastrado"
+// @Router /auth/register [post]
 func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "corpo da requisição inválido", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "corpo da requisição inválido")
 		return
 	}
 
@@ -40,13 +41,11 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "email já cadastrado" {
 			status = http.StatusConflict
 		}
-		http.Error(w, err.Error(), status)
+		response.Error(w, status, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	response.Created(w, map[string]interface{}{
 		"user":  user,
 		"token": token,
 	})
@@ -59,24 +58,23 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body models.LoginRequest true "Credenciais"
-// @Success 200 {object} models.TokenResponse
-// @Failure 401 {string} string "Credenciais inválidas"
-// @Router /api/v1/auth/login [post]
+// @Success 200 {object} response.APIResponse "Login realizado com sucesso"
+// @Failure 401 {object} response.APIResponse "Credenciais inválidas"
+// @Router /auth/login [post]
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "corpo da requisição inválido", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "corpo da requisição inválido")
 		return
 	}
 
 	token, err := c.authService.Login(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(token)
+	response.JSON(w, http.StatusOK, token)
 }
 
 // Refresh renova o access token usando um refresh token válido.
@@ -86,24 +84,23 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body models.RefreshRequest true "Refresh token"
-// @Success 200 {object} models.TokenResponse
-// @Failure 401 {string} string "Refresh token inválido ou expirado"
-// @Router /api/v1/auth/refresh [post]
+// @Success 200 {object} response.APIResponse "Tokens renovados com sucesso"
+// @Failure 401 {object} response.APIResponse "Refresh token inválido ou expirado"
+// @Router /auth/refresh [post]
 func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req models.RefreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "corpo da requisição inválido", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "corpo da requisição inválido")
 		return
 	}
 
 	token, err := c.authService.RefreshToken(req.RefreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(token)
+	response.JSON(w, http.StatusOK, token)
 }
 
 // Verify confirma o email do usuário através de um token de verificação.
@@ -114,26 +111,25 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param token query string false "Token de verificação"
 // @Param request body models.VerifyEmailRequest false "Token no body (alternativa)"
-// @Success 200 {object} map[string]string "mensagem de sucesso"
-// @Failure 400 {string} string "Token inválido ou expirado"
-// @Router /api/v1/auth/verify-email [get]
-// @Router /api/v1/auth/verify-email [post]
+// @Success 200 {object} response.APIResponse "Email verificado com sucesso"
+// @Failure 400 {object} response.APIResponse "Token inválido ou expirado"
+// @Router /auth/verify-email [get]
+// @Router /auth/verify-email [post]
 func (c *AuthController) Verify(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		var req models.VerifyEmailRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Token == "" {
-			http.Error(w, "token é obrigatório (query param ?token= ou body JSON)", http.StatusBadRequest)
+			response.Error(w, http.StatusBadRequest, "token é obrigatório (query param ?token= ou body JSON)")
 			return
 		}
 		token = req.Token
 	}
 
 	if err := c.authService.VerifyEmail(token); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "email verificado com sucesso"})
+	response.Message(w, http.StatusOK, "email verificado com sucesso")
 }

@@ -16,15 +16,26 @@ cp .env.example .env
 
 Edite o `JWT_SECRET` no `.env` para uma chave secreta. Os defaults funcionam com o Docker Compose.
 
-### 3. Subir com Docker (recomendado)
+### 3. Subir com Docker
+
+**Modo desenvolvimento (hot reload)** — recomendado para codar:
 
 ```bash
-# Sobe MySQL + API
-docker compose up -d
+docker compose --profile dev up -d
 
 # Acompanhar os logs
-docker logs golang_api_app -f
+docker logs golang_api_app_dev -f
 ```
+
+Qualquer alteração no código é recarregada automaticamente. Não precisa rebuildar.
+
+**Modo produção/build estático** — simula o que vai pro ECS:
+
+```bash
+docker compose --profile prod up -d
+```
+
+> Use `docker compose --profile dev down` ou `--profile prod down` para parar cada modo.
 
 ### 4. Rodar localmente (sem Docker)
 
@@ -55,8 +66,10 @@ Na interface Swagger você pode:
 ### Regenerar a documentação
 
 ```bash
-swag init -g cmd/api/main.go
+~/go/bin/swag init -g cmd/api/main.go
 ```
+
+> Se `swag` não for encontrado, instale com: `go install github.com/swaggo/swag/cmd/swag@latest` e adicione `export PATH=$PATH:~/go/bin` ao seu `~/.zshrc`.
 
 ---
 

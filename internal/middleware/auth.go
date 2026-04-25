@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/user/golang-api-rest/internal/config"
+	"github.com/user/golang-api-rest/internal/response"
 	"github.com/user/golang-api-rest/internal/utils"
 )
 
@@ -21,19 +22,19 @@ func RequireAuth(cfg *config.Config) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "authorization header ausente", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "authorization header ausente")
 				return
 			}
 
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				http.Error(w, "formato de authorization inválido, use: Bearer <token>", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "formato de authorization inválido, use: Bearer <token>")
 				return
 			}
 
 			claims, err := utils.ValidateToken(parts[1], cfg)
 			if err != nil {
-				http.Error(w, "token inválido ou expirado", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "token inválido ou expirado")
 				return
 			}
 
@@ -49,7 +50,7 @@ func RequireRole(role string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userRole, ok := r.Context().Value(ContextKeyRole).(string)
 			if !ok || userRole != role {
-				http.Error(w, "acesso negado", http.StatusForbidden)
+				response.Error(w, http.StatusForbidden, "acesso negado")
 				return
 			}
 			next.ServeHTTP(w, r)
