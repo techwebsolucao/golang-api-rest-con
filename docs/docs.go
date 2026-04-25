@@ -237,6 +237,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/verify-token": {
+            "post": {
+                "description": "Verifica se o token JWT enviado no header Authorization é válido e retorna os claims.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verificar token JWT",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token de verificação",
+                        "name": "token",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Token no body (alternativa)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token verificado com sucesso",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Token inválido ou expirado",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "security": [

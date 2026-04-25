@@ -199,6 +199,36 @@ paths:
       summary: Verificar email
       tags:
       - auth
+  /auth/verify-token:
+    post:
+      consumes:
+      - application/json
+      description: Verifica se o token JWT enviado no header Authorization é válido
+        e retorna os claims.
+      parameters:
+      - description: Token de verificação
+        in: query
+        name: token
+        type: string
+      - description: Token no body (alternativa)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token verificado com sucesso
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Token inválido ou expirado
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Verificar token JWT
+      tags:
+      - auth
   /users:
     get:
       description: Retorna a lista de todos os usuários cadastrados (requer autenticação).

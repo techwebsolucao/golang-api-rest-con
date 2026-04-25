@@ -133,3 +133,33 @@ func (c *AuthController) Verify(w http.ResponseWriter, r *http.Request) {
 
 	response.Message(w, http.StatusOK, "email verificado com sucesso")
 }
+
+// Verify jwt token
+// @Summary Verificar token JWT
+// @Description Verifica se o token JWT enviado no header Authorization é válido e retorna os claims.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param token query string false "Token de verificação"
+// @Param request body models.VerifyEmailRequest false "Token no body (alternativa)"
+// @Success 200 {object} response.APIResponse "Token verificado com sucesso"
+// @Failure 400 {object} response.APIResponse "Token inválido ou expirado"
+// @Router /auth/verify-token [post]
+func (c *AuthController) VerifyJWT(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		response.Error(w, http.StatusUnauthorized, "token de autenticação é obrigatório")
+		return
+	}
+
+	claims, err := c.authService.VerifyJWT(token)
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "token inválido ou expirado")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]interface{}{
+		"user_id": claims.UserID,
+		"role":    claims.Role,
+	})
+}

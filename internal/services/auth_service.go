@@ -160,3 +160,11 @@ func (s *AuthService) VerifyEmail(tokenStr string) error {
 	go s.email.SendWelcomeEmail(user.Email, user.Name)
 	return nil
 }
+
+func (s *AuthService) VerifyJWT(tokenStr string) (*utils.TokenClaims, error) {
+	claims, err := utils.ValidateToken(tokenStr, s.cfg)
+	if err != nil {
+		return nil, errors.New("token inválido ou expirado")
+	}
+	return claims, nil
+}

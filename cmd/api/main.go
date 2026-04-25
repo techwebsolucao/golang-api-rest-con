@@ -76,6 +76,7 @@ func main() {
 		r.Post("/refresh", authController.Refresh)
 		r.Get("/verify-email", authController.Verify)
 		r.Post("/verify-email", authController.Verify)
+		r.Post("/verify-token", authController.VerifyJWT)
 	})
 
 	r.Route("/api/v1/users", func(r chi.Router) {
@@ -86,6 +87,26 @@ func main() {
 		r.Put("/{id}", userController.Update)
 
 		r.With(middleware.RequireRole("admin")).Delete("/{id}", userController.Delete)
+	})
+
+	//Fallbacks
+	//404
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"error":"endpoint não encontrado"}`))
+	})
+	//500
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(`{"error":"método não permitido"}`))
+	})
+	//503
+	r.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
 	})
 
 	srv := &http.Server{
