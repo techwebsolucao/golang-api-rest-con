@@ -1,0 +1,357 @@
+basePath: /api/v1
+definitions:
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  models.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  models.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: suporte@example.com
+    name: Suporte
+  description: API de prova de conceito com autenticação JWT, MySQL e envio de email.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go REST API
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica com email e senha e retorna access + refresh tokens.
+      parameters:
+      - description: Credenciais
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenResponse'
+        "401":
+          description: Credenciais inválidas
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Gera novos access + refresh tokens a partir de um refresh token
+        válido.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenResponse'
+        "401":
+          description: Refresh token inválido ou expirado
+          schema:
+            type: string
+      summary: Renovar tokens
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo usuário e retorna os dados + tokens JWT. Um email
+        de verificação é enviado.
+      parameters:
+      - description: Dados do registro
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: user + token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erro de validação
+          schema:
+            type: string
+        "409":
+          description: Email já cadastrado
+          schema:
+            type: string
+      summary: Registrar novo usuário
+      tags:
+      - auth
+  /api/v1/auth/verify-email:
+    get:
+      consumes:
+      - application/json
+      description: Marca o email do usuário como verificado usando o token enviado
+        por email.
+      parameters:
+      - description: Token de verificação
+        in: query
+        name: token
+        type: string
+      - description: Token no body (alternativa)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: mensagem de sucesso
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Token inválido ou expirado
+          schema:
+            type: string
+      summary: Verificar email
+      tags:
+      - auth
+    post:
+      consumes:
+      - application/json
+      description: Marca o email do usuário como verificado usando o token enviado
+        por email.
+      parameters:
+      - description: Token de verificação
+        in: query
+        name: token
+        type: string
+      - description: Token no body (alternativa)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: mensagem de sucesso
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Token inválido ou expirado
+          schema:
+            type: string
+      summary: Verificar email
+      tags:
+      - auth
+  /api/v1/users:
+    get:
+      description: Retorna a lista de todos os usuários cadastrados (requer autenticação).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Listar usuários
+      tags:
+      - users
+  /api/v1/users/{id}:
+    delete:
+      description: Remove um usuário do sistema (requer role admin).
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Sem conteúdo
+        "400":
+          description: ID inválido
+          schema:
+            type: string
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+        "403":
+          description: Acesso negado
+          schema:
+            type: string
+        "404":
+          description: Usuário não encontrado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Deletar usuário
+      tags:
+      - users
+    get:
+      description: Retorna os dados de um usuário específico (requer autenticação).
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: ID inválido
+          schema:
+            type: string
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+        "404":
+          description: Usuário não encontrado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Buscar usuário por ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Atualiza nome e/ou email de um usuário (requer autenticação).
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dados para atualizar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: ID ou corpo inválido
+          schema:
+            type: string
+        "401":
+          description: Não autorizado
+          schema:
+            type: string
+        "404":
+          description: Usuário não encontrado
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Atualizar usuário
+      tags:
+      - users
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    description: 'Insira o token JWT no formato: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

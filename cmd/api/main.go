@@ -10,25 +10,86 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	swagger "github.com/swaggo/http-swagger/v2"
+
+	"github.com/user/golang-api-rest/internal/config"
 	"github.com/user/golang-api-rest/internal/controllers"
+	"github.com/user/golang-api-rest/internal/database"
 	"github.com/user/golang-api-rest/internal/middleware"
 	"github.com/user/golang-api-rest/internal/repositories"
 	"github.com/user/golang-api-rest/internal/services"
+
+	_ "github.com/user/golang-api-rest/docs"
 )
 
+// @title Go REST API
+// @version 1.0
+// @description API de prova de conceito com autenticação JWT, MySQL e envio de email.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Suporte
+// @contact.email suporte@example.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Insira o token JWT no formato: Bearer {token}
 func main() {
-	userRepo := repositories.NewMemoryRepository()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Erro ao carregar configuração: %v", err)
+	}
+
+	db, err := database.Connect(cfg)
+	if err != nil {
+		log.Fatalf("Erro ao conectar no banco: %v", err)
+	}
+	defer db.Close()
+
+	if err := database.Migrate(db); err != nil {
+		log.Fatalf("Erro ao executar migração: %v", err)
+	}
+
+	userRepo := repositories.NewMySQLRepository(db)
+	emailService := services.NewEmailService(cfg)
+	authService := services.NewAuthService(userRepo, cfg, emailService)
 	userService := services.NewUserService(userRepo)
+	authController := controllers.NewAuthController(authService)
 	userController := controllers.NewUserController(userService)
 
 	r := chi.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
 
-	r.Get("/api/v1/users", userController.GetAll)
+	r.Get("/swagger/*", swagger.Handler(swagger.URL("http://localhost:8080/swagger/doc.json")))
+
+	r.Route("/api/v1/auth", func(r chi.Router) {
+		r.Post("/register", authController.Register)
+		r.Post("/login", authController.Login)
+		r.Post("/refresh", authController.Refresh)
+		r.Get("/verify-email", authController.Verify)
+		r.Post("/verify-email", authController.Verify)
+	})
+
+	r.Route("/api/v1/users", func(r chi.Router) {
+		r.Use(middleware.RequireAuth(cfg))
+
+		r.Get("/", userController.GetAll)
+		r.Get("/{id}", userController.GetByID)
+		r.Put("/{id}", userController.Update)
+
+		r.With(middleware.RequireRole("admin")).Delete("/{id}", userController.Delete)
+	})
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + cfg.AppPort,
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -36,7 +97,7 @@ func main() {
 	}
 
 	go func() {
-		log.Println("Servidor rodando na porta :8080")
+		log.Printf("Servidor rodando na porta :%s", cfg.AppPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}

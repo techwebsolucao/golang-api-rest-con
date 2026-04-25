@@ -1,11 +1,41 @@
 version: '3.8'
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: golang_api_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: golang_api_pass
+      MYSQL_DATABASE: golang_api
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pgolang_api_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build: .
+    container_name: golang_api_app
     ports:
       - "8080:8080"
     volumes:
       - .:/app
     environment:
       - APP_ENV=development
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=golang_api_pass
+      - DB_NAME=golang_api
+      - JWT_SECRET=sua-chave-secreta-aqui
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

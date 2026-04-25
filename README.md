@@ -1,69 +1,180 @@
 # Golang API Rest
 
-Este projeto é uma API REST escrita em Go, estruturada para facilitar o aprendizado de quem vem de linguagens como PHP.
+API REST em Go com autenticação JWT, MySQL e envio de email — prova de conceito com foco em código limpo e idiomático.
 
-## 🚀 Como Rodar o Projeto
+## 🚀 Como Rodar
 
-### 1. Usando Docker (Recomendado)
+### 1. Pré-requisitos
 
-Como o projeto possui um arquivo `docker-compose.yml`, você pode rodar tudo em containers:
+- **Docker** e **Docker Compose** (recomendado) ou **Go 1.26+**
 
-*   **Subir o projeto (e buildar):**
-    ```bash
-    docker-compose up --build
-    ```
-*   **Subir em background:**
-    ```bash
-    docker-compose up -d
-    ```
-*   **Parar o projeto:**
-    ```bash
-    docker-compose down
-    ```
+### 2. Configuração
 
-### 2. Rodando Localmente (Sem Docker)
+```bash
+cp .env.example .env
+```
 
-Se você tiver o Go instalado na sua máquina (v1.22+):
+Edite o `JWT_SECRET` no `.env` para uma chave secreta. Os defaults funcionam com o Docker Compose.
 
-*   **Instalar dependências e organizar arquivos:**
-    ```bash
-    go mod tidy
-    ```
-*   **Rodar em modo desenvolvimento (tipo `php artisan serve`):**
-    ```bash
-    go run cmd/api/main.go
-    ```
-*   **Compilar o projeto (gerar executável):**
-    ```bash
-    go build -o api cmd/api/main.go
-    ```
-*   **Executar o arquivo compilado:**
-    ```bash
-    ./api
-    ```
+### 3. Subir com Docker (recomendado)
+
+```bash
+# Sobe MySQL + API
+docker compose up -d
+
+# Acompanhar os logs
+docker logs golang_api_app -f
+```
+
+### 4. Rodar localmente (sem Docker)
+
+```bash
+# Pré-requisito: ter MySQL rodando na máquina
+
+# Instalar dependências
+go mod tidy
+
+# Rodar
+go run cmd/api/main.go
+```
 
 ---
 
-## 🧠 Dicas para ex-PHPs (Ponteiros e Tipos)
+## 📖 Documentação Swagger
 
-No Go, temos conceitos que o PHP gerencia automaticamente. Veja o resumo:
+Com a API rodando, acesse:
 
-| Símbolo | Nome | Função | Analogia PHP |
-| :--- | :--- | :--- | :--- |
-| `&` | Endereço | Pega o local da memória onde o valor está. | Seria como pegar o ID único de um objeto. |
-| `*` | Ponteiro | Indica que a variável guarda um endereço, não o valor real. | Padrão de objetos em classes PHP. |
-| `nil` | Nulo | O valor zero para ponteiros, interfaces e slices. | `null` |
-| `:=` | Declaração | Cria e atribui uma variável inferindo o tipo. | `$variavel = ...` |
+➡️ **http://localhost:8080/swagger/index.html**
 
-### Exemplo Rápido:
-```go
-user := User{Name: "Eduardo"} // Criou o valor
-ref  := &user                 // Pegou o endereço (&)
+Na interface Swagger você pode:
+
+- Ver todos os endpoints disponíveis
+- Testar chamadas diretamente pela UI
+- Clicar em **Authorize** e colar o token JWT para testar rotas protegidas
+
+### Regenerar a documentação
+
+```bash
+swag init -g cmd/api/main.go
 ```
+
+---
+
+## 🧪 Endpoints
+
+### Autenticação (públicos)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/api/v1/auth/register` | Criar conta (retorna dados + JWT) |
+| `POST` | `/api/v1/auth/login` | Login (retorna access + refresh token) |
+| `POST` | `/api/v1/auth/refresh` | Renovar tokens com refresh token |
+| `GET` | `/api/v1/auth/verify-email?token=...` | Verificar email |
+
+### Usuários (protegidos — exigem `Authorization: Bearer <token>`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/v1/users` | Listar todos |
+| `GET` | `/api/v1/users/{id}` | Buscar por ID |
+| `PUT` | `/api/v1/users/{id}` | Atualizar dados |
+| `DELETE` | `/api/v1/users/{id}` | Deletar (requer role **admin**) |
+
+---
+
+## 🔐 Fluxo de Autenticação
+
+```
+1. POST /register → cria usuário, gera token de verificação, envia email
+2. GET /verify-email?token=xxx → confirma o email
+3. POST /login → retorna access_token (15min) + refresh_token (24h)
+4. GET /users -H "Authorization: Bearer <access_token>" → dados protegidos
+5. POST /refresh → renova os tokens quando o access_token expirar
+```
+
+### Headers para rotas protegidas
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+---
 
 ## 📁 Estrutura de Pastas
 
-*   `cmd/api/`: Ponto de entrada da aplicação (`main.go`).
-*   `internal/`: Código privado da aplicação (Controllers, Services, Models, Repositories).
-*   `go.mod`: Gerenciador de dependências (o `composer.json`).
-*   `go.sum`: Checksum das dependências (o `composer.lock`).
+```
+cmd/api/main.go              # Entry point + DI
+internal/
+  config/config.go           # Config via .env
+  database/mysql.go          # Conexão MySQL + migrações
+  models/                    # Structs de dados (User, DTOs)
+  repositories/              # Camada de dados (MySQLRepository)
+  services/                  # Regras de negócio (auth, user, email)
+  controllers/               # Handlers HTTP
+  middleware/                # Logging, JWT auth, roles
+  utils/                     # Hash, JWT, validação
+docs/                        # Swagger docs (gerado automaticamente)
+```
+
+### Padrão arquitetural
+
+O projeto segue **separação por camadas** (tipo MVC hexagonal):
+
+```
+Controller → Service → Repository → MySQL
+                ↓
+          EmailService (SMTP)
+```
+
+Cada camada depende apenas da camada abaixo via **interfaces**, facilitando testes e manutenção.
+
+---
+
+## 🛠️ Comandos Úteis
+
+```bash
+# Compilar
+go build ./...
+
+# Verificar código
+go vet ./...
+
+# Rodar local
+go run cmd/api/main.go
+
+# Regenerar Swagger
+swag init -g cmd/api/main.go
+
+# Docker
+docker compose up -d          # Subir
+docker compose down           # Parar
+docker compose build --no-cache  # Rebuildar
+docker logs golang_api_app    # Logs da API
+```
+
+---
+
+## ⚙️ Variáveis de Ambiente
+
+| Variável | Default | Descrição |
+|----------|---------|-----------|
+| `APP_ENV` | `development` | `development` = emails logados no console |
+| `APP_PORT` | `8080` | Porta do servidor |
+| `DB_HOST` | `localhost` | Host MySQL |
+| `DB_PORT` | `3306` | Porta MySQL |
+| `DB_USER` | `root` | Usuário MySQL |
+| `DB_PASSWORD` | *(vazio)* | Senha MySQL |
+| `DB_NAME` | `golang_api` | Nome do banco |
+| `JWT_SECRET` | *(obrigatório)* | Chave para assinar tokens |
+| `SMTP_*` | — | Config de email (só usado em produção) |
+
+---
+
+## 🧠 Conceitos Go (para ex-PHPs)
+
+| Símbolo | Nome | Função | Analogia PHP |
+| :--- | :--- | :--- | :--- |
+| `&` | Endereço | Pega o local da memória onde o valor está | ID único de um objeto |
+| `*` | Ponteiro | Variável guarda um endereço, não o valor | Objetos em classes PHP |
+| `nil` | Nulo | Valor zero para ponteiros e interfaces | `null` |
+| `:=` | Declaração curta | Cria e atribui inferindo o tipo | `$var = ...` |
